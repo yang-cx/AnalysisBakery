@@ -1,0 +1,11 @@
+services:
+  main:
+    volumes:
+      - type: bind
+        source: ${PWD}/external/TRExFitter/test/configs/FitExample.config
+        target: /app/FitExample.config
+        read_only: true
+      - type: bind
+        source: /pscratch/sd/c/cxyang/AnalysisBakery/eos
+        target: /trexinputs/eos
+        read_only: true

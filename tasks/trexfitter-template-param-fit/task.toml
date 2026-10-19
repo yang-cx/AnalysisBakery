@@ -1,0 +1,85 @@
+schema_version = "1.3"
+artifacts = []
+
+[task]
+name = "lbl/trexfitter-template-param-fit"
+description = "Localize and run the official TRExFitter 1D template-parametrization example through h/t/w/f."
+authors = []
+keywords = ["trexfitter", "atlas", "template", "parametrization", "top-mass"]
+
+[metadata]
+category = "scientific-config"
+
+[verifier]
+timeout_sec = 360.0
+
+[[verifier.collect]]
+service = "main"
+timeout_sec = 300.0
+command = """bash -lc 'set -e
+mkdir -p /logs/artifacts
+
+for gcc_setup in /opt/lcg/gcc/13.1.0*/x86_64-*/setup.sh /opt/lcg/gcc/14.2.0*/x86_64-*/setup.sh; do
+  if [ -f "$gcc_setup" ]; then
+    . "$gcc_setup"
+    break
+  fi
+done
+
+for stat_setup in /usr/StatAnalysis/*/InstallArea/*/setup.sh; do
+  if [ -f "$stat_setup" ]; then
+    . "$stat_setup"
+    break
+  fi
+done
+
+if [ ! -f /tmp/FitExampleTemplate_1D.local.config ]; then
+  for step in h t w f; do
+    printf "missing /tmp/FitExampleTemplate_1D.local.config\\n" > "/logs/artifacts/trexfitter_${step}.log"
+    printf "125\\n" > "/logs/artifacts/trexfitter_${step}.exitcode"
+  done
+  exit 0
+fi
+
+cd /tmp
+set +e
+for step in h t w f; do
+  trex-fitter "$step" /tmp/FitExampleTemplate_1D.local.config > "/logs/artifacts/trexfitter_${step}.log" 2>&1
+  rc=$?
+  printf "%s\\n" "$rc" > "/logs/artifacts/trexfitter_${step}.exitcode"
+  if [ "$rc" -ne 0 ]; then
+    break
+  fi
+done
+set -e
+
+find /tmp/FitExampleTemplate_1D -maxdepth 4 -type f | sort > /logs/artifacts/trexfitter_outputs.txt 2>/dev/null || true
+cp /tmp/FitExampleTemplate_1D.local.config /logs/artifacts/FitExampleTemplate_1D.local.config
+
+for f in \
+  /tmp/FitExampleTemplate_1D/Histograms/FitExampleTemplate_1D_histos.root \
+  /tmp/FitExampleTemplate_1D/Templates/Parametrization.txt \
+  /tmp/FitExampleTemplate_1D/RooStats/FitExampleTemplate_1D_combined_FitExampleTemplate_1D_model.root \
+  /tmp/FitExampleTemplate_1D/Fits/FitExampleTemplate_1D.root \
+  /tmp/FitExampleTemplate_1D/Fits/FitExampleTemplate_1D.txt \
+  /tmp/FitExampleTemplate_1D/Fits/FitExampleTemplate_1D_errDecomp_topMass.txt; do
+  if [ -f "$f" ]; then
+    cp "$f" "/logs/artifacts/$(basename "$f")"
+  fi
+done
+exit 0'"""
+
+[verifier.env]
+
+[agent]
+timeout_sec = 300.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 600.0
+os = "linux"
+mcp_servers = []
+
+[environment.env]
+
+[solution.env]

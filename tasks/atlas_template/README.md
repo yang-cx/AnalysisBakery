@@ -1,0 +1,1 @@
+# berkeley/atlas_template

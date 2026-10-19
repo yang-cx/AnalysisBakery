@@ -1,0 +1,9 @@
+[submodule "verl"]
+	path = verl
+	url = git@github.com:verl-project/verl.git
+[submodule "harbor"]
+	path = harbor
+	url = ssh://git@gitlab.cern.ch:7999/yangc/harbor.git
+[submodule "external/TRExFitter"]
+	path = external/TRExFitter
+	url = https://gitlab.cern.ch/TRExStats/TRExFitter.git

@@ -1,0 +1,93 @@
+schema_version = "1.3"
+artifacts = []
+
+[task]
+name = "lbl/hyy-rl"
+description = "Complete a histogram-based TRExFitter config for the Hyy category model so it can build the workspace, run the fit, and evaluate significance from a read-only template."
+authors = []
+keywords = ["trexfitter", "atlas", "histograms", "fit", "physics"]
+
+[metadata]
+category = "scientific-config"
+
+[verifier]
+timeout_sec = 180.0
+
+[[verifier.collect]]
+service = "main"
+timeout_sec = 120.0
+command = """bash -lc 'set -e
+mkdir -p /logs/artifacts
+mkdir -p /tmp/hyy/RooStats /tmp/hyy/Fits /tmp/hyy/Histograms /tmp/hyy/Pulls /tmp/hyy/Pruning /tmp/hyy/Tables /tmp/hyy/Significance
+for gcc_setup in /opt/lcg/gcc/13.1.0*/x86_64-*/setup.sh; do
+  if [ -f "$gcc_setup" ]; then
+    . "$gcc_setup"
+    break
+  fi
+done
+SETUP=/usr/StatAnalysis/0.4.4/InstallArea/x86_64-el9-gcc13-opt/setup.sh
+if [ -f "$SETUP" ]; then
+  . "$SETUP"
+fi
+if [ ! -f /tmp/hyy_config.config ]; then
+  printf "missing /tmp/hyy_config.config\\n" > /logs/artifacts/trexfitter_w.log
+  printf "working config was not created\\n" > /logs/artifacts/trexfitter_f.log
+  printf "working config was not created\\n" > /logs/artifacts/trexfitter_s.log
+  printf "125\\n" > /logs/artifacts/trexfitter_w.exitcode
+  printf "125\\n" > /logs/artifacts/trexfitter_f.exitcode
+  printf "125\\n" > /logs/artifacts/trexfitter_s.exitcode
+  exit 0
+fi
+cd /tmp
+set +e
+trex-fitter w /tmp/hyy_config.config > /logs/artifacts/trexfitter_w.log 2>&1
+wrc=$?
+if [ "$wrc" -eq 0 ]; then
+  trex-fitter f /tmp/hyy_config.config > /logs/artifacts/trexfitter_f.log 2>&1
+  frc=$?
+else
+  printf "workspace step failed, skipping fit\\n" > /logs/artifacts/trexfitter_f.log
+  frc=125
+fi
+if [ "$wrc" -eq 0 ]; then
+  trex-fitter s /tmp/hyy_config.config > /logs/artifacts/trexfitter_s.log 2>&1
+  src=$?
+else
+  printf "workspace step failed, skipping significance\\n" > /logs/artifacts/trexfitter_s.log
+  src=125
+fi
+set -e
+printf "%s\\n" "$wrc" > /logs/artifacts/trexfitter_w.exitcode
+printf "%s\\n" "$frc" > /logs/artifacts/trexfitter_f.exitcode
+printf "%s\\n" "$src" > /logs/artifacts/trexfitter_s.exitcode
+find /tmp/hyy -maxdepth 3 -type f | sort > /logs/artifacts/trexfitter_outputs.txt
+grep -E "Expected significance|Observed significance|Expected p-value|Observed p-value" /logs/artifacts/trexfitter_s.log > /logs/artifacts/significance_summary.txt || true
+cp /tmp/hyy_config.config /logs/artifacts/hyy_config.config
+if [ -f /tmp/hyy/RooStats/hyy_combined_hyy_model.root ]; then
+  cp /tmp/hyy/RooStats/hyy_combined_hyy_model.root /logs/artifacts/hyy_combined_hyy_model.root
+fi
+if [ -f /tmp/hyy/Fits/hyy.root ]; then
+  cp /tmp/hyy/Fits/hyy.root /logs/artifacts/hyy_fit_results.root
+fi
+if [ -f /tmp/hyy/Significance/Asymptotics/PostSignificanceWS.root ]; then
+  cp /tmp/hyy/Significance/Asymptotics/PostSignificanceWS.root /logs/artifacts/hyy_significance_workspace.root
+fi
+if [ -f /tmp/hyy/Significance/Asymptotics/parameter.root ]; then
+  cp /tmp/hyy/Significance/Asymptotics/parameter.root /logs/artifacts/hyy_significance_parameter.root
+fi
+exit 0'"""
+
+[verifier.env]
+
+[agent]
+timeout_sec = 300.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 600.0
+os = "linux"
+mcp_servers = []
+
+[environment.env]
+
+[solution.env]

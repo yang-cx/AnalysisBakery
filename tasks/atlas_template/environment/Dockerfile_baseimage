@@ -1,0 +1,14 @@
+FROM gitlab-registry.cern.ch/atlas-sit/docker/alma9-atlasos:1.5.0-gcc14
+
+SHELL ["/bin/bash", "-c"]
+
+# Install some necessary packages
+
+RUN dnf install -y https://vault.almalinux.org/9.7/AppStream/x86_64/os/Packages/sqlite-3.34.1-9.el9_7.x86_64.rpm   https://vault.almalinux.org/9.7/AppStream/x86_64/os/Packages/sqlite-devel-3.34.1-9.el9_7.x86_64.rpm && \
+    dnf install 'dnf-command(config-manager)' -y && \
+    dnf config-manager --set-enabled crb && \
+    dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo && \
+    dnf install ccache binutils python uuid-devel libuuid-devel ncurses-devel \
+    mesa-libGL-devel mesa-libGLU-devel bzip2-devel krb5-devel time cuda-toolkit-12-9 -y && sudo dnf clean all
+
+WORKDIR /app

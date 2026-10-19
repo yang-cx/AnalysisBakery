@@ -1,0 +1,11 @@
+services:
+  main:
+    volumes:
+      - type: bind
+        source: ${PWD}/histograms/
+        target: /histograms/
+        read_only: true
+      - type: bind
+        source: ${PWD}/tasks/hyy-rl/environment/hyy_config.config
+        target: /app/template_hyy_config.config
+        read_only: true
